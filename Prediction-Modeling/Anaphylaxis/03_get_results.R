@@ -172,6 +172,16 @@ perf_wide %>%
   filter(abs(F1_num - max(F1_num, na.rm = TRUE)) < 0.0005) %>%
   select(-F1_num) %>% 
   write_csv(file = paste0(result_prefix, "_max_f1.csv"))
+# the same thing, but with PPV as close to 0.8 as possible
+perf_wide %>%
+  group_by(id) %>%
+  mutate(PPV_num = as.numeric(stringr::str_extract(PPV, "\\d+(?:\\.\\d+)?(?=\\s*\\[)")),
+           PPV_diff = abs(PPV_num - 0.8),
+           min_diff = min(PPV_diff, na.rm = TRUE)) %>% 
+    filter(abs(PPV_diff - min_diff) < 0.0005) %>%
+    select(-PPV_num, -PPV_diff, -min_diff) %>%
+  write_csv(file = paste0(result_prefix, "_ppv80.csv"))
+
 # AUCs with 95% CIs
 perf %>%
   group_by(id) %>%
@@ -239,6 +249,14 @@ all_raw_silver_perf_wide %>%
   select(-max_f1, -F1_num) %>% 
   ungroup() %>% 
   write_csv(file = paste0(result_prefix, "_raw_silver_max_f1.csv"))
+all_raw_silver_perf_wide %>%
+    group_by(id) %>%
+    mutate(PPV_num = as.numeric(stringr::str_extract(PPV, "\\d+(?:\\.\\d+)?(?=\\s*\\[)")),
+           PPV_diff = abs(PPV_num - 0.8),
+           min_diff = min(PPV_diff, na.rm = TRUE)) %>% 
+    filter(abs(PPV_diff - min_diff) < 0.0005) %>%
+    select(-PPV_num, -PPV_diff, -min_diff) %>% 
+    write_csv(file = paste0(result_prefix, "_raw_silver_ppv80.csv"))
 # AUCs and 95% CIs
 all_raw_silver_perf %>%
   group_by(id) %>%

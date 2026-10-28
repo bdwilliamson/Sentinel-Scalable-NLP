@@ -16,9 +16,6 @@ library("PheNorm")
 library("ROCR")
 library("WeightedROC")
 library("here")
-# for prediction performance CIs
-library("SuperLearner")
-library("vimp")
 
 here::i_am("README.md")
 
@@ -226,11 +223,11 @@ for (i in seq_len(num_silvers)) {
     filter(id == this_silver_label)
   if (packageVersion("dplyr") >= "1.1.0") {
     this_wide_perf %>% 
-      mutate(across(3:9, \(x) round(x, 3))) %>% 
+      mutate(across(where(is.numeric), \(x) round(x, 3))) %>% 
       write_csv(file = paste0(file_prefix, "_perf_table.csv"))
   } else {
     this_wide_perf %>% 
-      mutate(across(3:9, round, 3)) %>% 
+      mutate(across(where(is.numeric), round, 3)) %>% 
       write_csv(file = paste0(file_prefix, "_perf_table.csv"))  
   }
 }

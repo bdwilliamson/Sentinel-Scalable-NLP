@@ -23,18 +23,18 @@ source(here::here("00_utils.R"))
 # set up command-line args ----------------------------------------------------
 parser <- OptionParser()
 parser <- add_option(parser, "--data-dir",
-                     default = "G:/CTRHS/Sentinel/Innovation_Center/NLP_COVID19_Carrell/PheNorm/analysis_datasets_negation_0_normalization_0_dimension-reduction_0_train-on-gold_0/",
+                     default = "G:/CTRHS/Immu/VSD Task Order F1 PheNorm Anaphylaxis (1367)/Analysis/PheNorm/analysis_datasets_negation_0_normalization_0_dimension-reduction_0_train-on-gold_0/",
                      help = "The input data directory")
 parser <- add_option(parser, "--output-dir",
-                     default = "G:/CTRHS/Sentinel/Innovation_Center/NLP_COVID19_Carrell/PheNorm/results_negation_0_normalization_0_dimension-reduction_0_train-on-gold_0/",
+                     default = "G:/CTRHS/Immu/VSD Task Order F1 PheNorm Anaphylaxis (1367)/Analysis/PheNorm/results_negation_0_normalization_0_dimension-reduction_0_train-on-gold_0/",
                      help = "The output directory")
 parser <- add_option(parser, "--analysis",
-                     default = "phase_1_updated_symptomatic_covid", help = "The name of the analysis")
+                     default = "vsd_anaphylaxis", help = "The name of the analysis")
 parser <- add_option(parser, "--weight", default = "Sampling_Weight", 
                      help = "Inverse probability of selection into gold-standard set")
 parser <- add_option(parser, "--data-site", default = "kpwa", help = "The site the data to evaluate on came from")
 parser <- add_option(parser, "--model-site", default = "kpwa", help = "The site the where the model was trained")
-parser <- add_option(parser, "--seed", type = "integer", default = 4747,
+parser <- add_option(parser, "--seed", type = "integer", default = 20231204,
                      help = "The random number seed to use")                     
 args <- parse_args(parser, convert_hyphens_to_underscores = TRUE)
 

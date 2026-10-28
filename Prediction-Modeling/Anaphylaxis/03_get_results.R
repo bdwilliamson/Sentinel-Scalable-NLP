@@ -16,6 +16,9 @@ library("PheNorm")
 library("ROCR")
 library("WeightedROC")
 library("here")
+# for prediction performance CIs
+library("SuperLearner")
+library("vimp")
 
 here::i_am("README.md")
 
@@ -109,13 +112,15 @@ if (args$model_site == args$data_site) {
 # evaluate performance --------------------------------------------------------
 perf_names <- names(preds)
 perf_list <- lapply(as.list(1:ncol(preds)), function(k) {
-  get_performance_metrics(predictions = preds[[k]], labels = outcomes,
+  get_performance_metrics(predictions = preds[[k]], labels = outcomes, 
                           weights = analysis_data$data[[args$weight]][analysis_data$test_ids],
                           identifier = perf_names[k])
 })
 perf <- map_dfr(perf_list, bind_rows)
 perf_wide <- perf %>%
-  pivot_wider(names_from = measure, values_from = perf) %>%
+  mutate(est_ci = sprintf("%.3f [%.3f, %.3f]", perf, cil, ciu)) %>% 
+  select(-perf, -se, -cil, -ciu) %>% 
+  pivot_wider(names_from = measure, values_from = est_ci) %>%
   select(-starts_with("auc"))
 # create plots and tables -----------------------------------------------------
 result_prefix <- paste0(
@@ -155,18 +160,20 @@ for (i in seq_len(length(silver_labels_plus_voting))) {
     filter(id == this_silver_label)
   if (packageVersion("dplyr") >= "1.1.0") {
     this_wide_perf %>%
-      mutate(across(3:9, \(x) round(x, 3))) %>%
+      mutate(across(where(is.numeric), \(x) round(x, 3))) %>%
       write_csv(file = paste0(file_prefix, "_perf_table.csv"))
   } else {
     this_wide_perf %>%
-      mutate(across(3:9, round, 3)) %>%
+      mutate(across(where(is.numeric), round, 3)) %>%
       write_csv(file = paste0(file_prefix, "_perf_table.csv"))  
   }
 }
 # Maximum F1 score
 perf_wide %>%
   group_by(id) %>%
-  filter(abs(F1 - max(F1, na.rm = TRUE)) < 0.0005) %>%
+  mutate(F1_num = as.numeric(stringr::str_extract(F1, "\\d+(?:\\.\\d+)?(?=\\s*\\[)"))) %>% 
+  filter(abs(F1_num - max(F1_num, na.rm = TRUE)) < 0.0005) %>%
+  select(-F1_num) %>% 
   write_csv(file = paste0(result_prefix, "_max_f1.csv"))
 # AUCs with 95% CIs
 perf %>%
@@ -209,7 +216,9 @@ raw_silver_perf <- lapply(as.list(seq_len(num_silvers)), function(k) {
 all_raw_silver_perf <- purrr::map_dfr(raw_silver_perf, bind_rows)
 saveRDS(raw_silver_perf, paste0(result_prefix, "_phenorm_perf_raw_silver_labels.rds"))
 all_raw_silver_perf_wide <- all_raw_silver_perf %>% 
-  pivot_wider(names_from = measure, values_from = perf)
+  mutate(est_ci = sprintf("%.3f [%.3f, %.3f]", perf, cil, ciu)) %>% 
+  select(-perf, -se, -cil, -ciu) %>% 
+  pivot_wider(names_from = measure, values_from = est_ci)
 for (i in seq_len(num_silvers)) {
   this_silver_label <- silver_labels[i]
   file_prefix <- paste0(result_prefix, "_raw_silver_label_", tolower(this_silver_label))
@@ -227,9 +236,10 @@ for (i in seq_len(num_silvers)) {
 }
 all_raw_silver_perf_wide %>% 
   group_by(id) %>% 
-  mutate(max_f1 = max(F1, na.rm = TRUE)) %>% 
-  filter(abs(F1 - max_f1) < 0.0005) %>% 
-  select(-max_f1) %>% 
+  mutate(F1_num = as.numeric(stringr::str_extract(F1, "\\d+(?:\\.\\d+)?(?=\\s*\\[)"))) %>% 
+  mutate(max_f1 = max(F1_num, na.rm = TRUE)) %>% 
+  filter(abs(F1_num - max_f1) < 0.0005) %>% 
+  select(-max_f1, -F1_num) %>% 
   ungroup() %>% 
   write_csv(file = paste0(result_prefix, "_raw_silver_max_f1.csv"))
 # AUCs and 95% CIs
